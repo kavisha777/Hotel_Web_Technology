@@ -1,213 +1,172 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --primary: #123c4a;
+    --secondary: #d4a95e;
+    --light: #f5f7f8;
+    --dark: #17252a;
+}
+
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behaviour: smooth;
 }
 
 body {
-  font-family: 'Segoe UI', sans-serif;
-  color: #24343a;
-  background: #fff;
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: var(--light);
+    color: var(--dark);
+}
+
+button {
+    cursor: pointer;
 }
 
 .navbar {
-  padding: 18px 0;
+    padding: 15px 0;
 }
 
 .navbar-brand {
-  letter-spacing: 2px;
-  color: #174c50;
+    font-size: 23px;
+    letter-spacing: 1px;
 }
 
 .nav-link {
-  font-weight: 500;
+    margin: 0 7px;
+    transition: 0.3s;
 }
 
-.hero-section {
-  min-height: 570px;
-  display: flex;
-  align-items: center;
-  color: white;
-  background:
-    linear-gradient(90deg, rgba(8, 35, 39, 0.85), rgba(8, 35, 39, 0.2)),
-    linear-gradient(135deg, #174c50, #75a7a0);
+.nav-link:hover {
+    color: var(--secondary) !important;
 }
 
-.hero-content {
-  padding-top: 80px;
-  padding-bottom: 80px;
+header {
+    background-color: var(--primary);
+    background-position: center;
+    background-size: cover;
 }
 
-.hero-label,
-.section-label {
-  color: #b18c59;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 3px;
+header h1 {
+    font-weight: 800;
 }
 
-.hero-content h1 {
-  font-size: clamp(40px, 6vw, 65px);
-  font-weight: 700;
-  margin: 22px 0;
+header .btn-primary {
+    background: var(--secondary);
+    border-color: var(--secondary);
+    color: #17252a;
+    padding: 12px 30px;
+    font-weight: 600;
 }
 
-.hero-content p {
-  font-size: 18px;
-  max-width: 520px;
-  line-height: 1.8;
-  margin-bottom: 30px;
+header .btn-primary:hover {
+    background: #bd9147;
+    border-color: #bd9147;
 }
 
-.booking-section {
-  position: relative;
-  margin-top: -55px;
-  z-index: 2;
+section {
+    scroll-margin-top: 80px;
 }
 
-.booking-panel {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
+.card {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.09) !important;
+}
+
+.card-img-top {
+    width: 100%;
+    object-fit: cover;
+}
+
+.btn {
+    border-radius: 7px;
+    transition: 0.2s ease;
+}
+
+.btn-dark {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.btn-dark:hover {
+    background: #20596a;
+    border-color: #20596a;
 }
 
 .form-control,
 .form-select {
-  padding: 12px;
-  border-color: #ddd;
+    padding: 11px 13px;
+    border-radius: 7px;
 }
 
-.intro-section {
-  padding-top: 100px;
-  padding-bottom: 85px;
-  max-width: 850px;
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.2rem rgba(18, 60, 74, 0.15);
 }
 
-.intro-section h2,
-.rooms-section h2,
-.facilities-section h2 {
-  font-size: 36px;
-  font-weight: 700;
-  margin: 15px 0;
+.table {
+    background: white;
 }
 
-.intro-section p {
-  color: #777;
-  line-height: 1.9;
+.table th {
+    white-space: nowrap;
 }
 
-.rooms-section {
-  background: #f6f8f7;
-  padding: 85px 0;
+footer {
+    background: var(--dark);
 }
 
-.room-card {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.06);
-  transition: transform 0.3s ease;
+footer p {
+    color: #ced4da;
 }
 
-.room-card:hover {
-  transform: translateY(-7px);
+.alert {
+    border-radius: 8px;
 }
 
-.room-image {
-  height: 220px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 65px;
+.badge {
+    padding: 8px 10px;
+    font-weight: 500;
 }
 
-.room-image-1 {
-  background: linear-gradient(135deg, #3b747a, #a7c9c1);
-}
-
-.room-image-2 {
-  background: linear-gradient(135deg, #6b7770, #c4b69b);
-}
-
-.room-image-3 {
-  background: linear-gradient(135deg, #557b62, #b3c7a2);
-}
-
-.room-card h5 {
-  font-weight: 700;
-}
-
-.room-price {
-  color: #174c50;
-  font-size: 16px;
-}
-
-.room-price small {
-  font-size: 11px;
-  color: #777;
-  font-weight: 400;
-}
-
-.facilities-section {
-  padding-top: 85px;
-  padding-bottom: 100px;
-}
-
-.facility-card {
-  padding: 30px 10px;
-  background: #f6f8f7;
-  border-radius: 10px;
-}
-
-.facility-card i {
-  font-size: 35px;
-  color: #397b78;
-}
-
-.facility-card h6 {
-  margin-top: 15px;
-  font-weight: 600;
-}
-
-.footer-section {
-  background: #153d40;
-  color: white;
-  padding: 55px 0 25px;
-}
-
-.footer-section p {
-  color: #d1dfdc;
-}
-
-.footer-section hr {
-  border-color: #668080;
+.spinner-border {
+    width: 2.5rem;
+    height: 2.5rem;
 }
 
 @media (max-width: 768px) {
-  .hero-section {
-    min-height: 480px;
-  }
+    header {
+        min-height: 400px !important;
+    }
 
-  .hero-content h1 {
-    font-size: 42px;
-  }
+    header h1 {
+        font-size: 2.2rem;
+    }
 
-  .booking-section {
-    margin-top: -25px;
-  }
+    .navbar-nav {
+        padding-top: 15px;
+        align-items: flex-start !important;
+        gap: 8px;
+    }
 
-  .booking-panel {
-    padding: 20px;
-  }
+    .table {
+        font-size: 12px;
+    }
 
-  .intro-section {
-    padding-top: 65px;
-    padding-bottom: 60px;
-  }
-
-  .rooms-section,
-  .facilities-section {
-    padding: 60px 0;
-  }
+    .container {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
 }
