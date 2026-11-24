@@ -10,23 +10,23 @@ use Illuminate\Validation\Rule;
 
 class RoomController extends Controller
 {
-    // Display all rooms
+    private function deleteStoredImage(?string $image): void
+    {
+        if ($image && !str_starts_with($image, 'http')) {
+            Storage::disk('public')->delete($image);
+        }
+    }
+
     public function index()
     {
-        $rooms = Room::latest()->get();
-
-        return response()->json($rooms);
+        return response()->json(Room::latest()->get());
     }
 
-    // Display one room
     public function show(string $id)
     {
-        $room = Room::findOrFail($id);
-
-        return response()->json($room);
+        return response()->json(Room::findOrFail($id));
     }
 
-    // Create a room
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -39,12 +39,22 @@ class RoomController extends Controller
             'capacity' => ['required', 'integer', 'min:1'],
             'status' => ['required', Rule::in(['available', 'unavailable'])],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'gallery_images' => ['sometimes', 'array', 'max:8'],
+            'gallery_images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')
                 ->store('rooms', 'public');
         }
+
+        $galleryPaths = [];
+
+        foreach ($request->file('gallery_images', []) as $image) {
+            $galleryPaths[] = $image->store('rooms/gallery', 'public');
+        }
+
+        $validated['gallery_images'] = $galleryPaths;
 
         $room = Room::create($validated);
 
@@ -54,7 +64,6 @@ class RoomController extends Controller
         ], 201);
     }
 
-    // Update a room
     public function update(Request $request, string $id)
     {
         $room = Room::findOrFail($id);
@@ -69,15 +78,29 @@ class RoomController extends Controller
             'capacity' => ['sometimes', 'required', 'integer', 'min:1'],
             'status' => ['sometimes', 'required', Rule::in(['available', 'unavailable'])],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'gallery_images' => ['sometimes', 'array', 'max:8'],
+            'gallery_images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         if ($request->hasFile('image')) {
-            if ($room->image) {
-                Storage::disk('public')->delete($room->image);
-            }
+            $this->deleteStoredImage($room->image);
 
             $validated['image'] = $request->file('image')
                 ->store('rooms', 'public');
+        }
+
+        if ($request->hasFile('gallery_images')) {
+            foreach ($room->gallery_images ?? [] as $oldImage) {
+                $this->deleteStoredImage($oldImage);
+            }
+
+            $galleryPaths = [];
+
+            foreach ($request->file('gallery_images') as $image) {
+                $galleryPaths[] = $image->store('rooms/gallery', 'public');
+            }
+
+            $validated['gallery_images'] = $galleryPaths;
         }
 
         $room->update($validated);
@@ -88,7 +111,6 @@ class RoomController extends Controller
         ]);
     }
 
-    // Delete a room
     public function destroy(string $id)
     {
         $room = Room::findOrFail($id);
@@ -99,8 +121,10 @@ class RoomController extends Controller
             ], 409);
         }
 
-        if ($room->image) {
-            Storage::disk('public')->delete($room->image);
+        $this->deleteStoredImage($room->image);
+
+        foreach ($room->gallery_images ?? [] as $image) {
+            $this->deleteStoredImage($image);
         }
 
         $room->delete();

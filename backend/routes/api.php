@@ -6,14 +6,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\RoomController;
 use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\ReviewController;
 
-/*
-|--------------------------------------------------------------------------
-| Public Routes
-|--------------------------------------------------------------------------
-*/
-
-// API health check
+// Public routes
 Route::get('/health', function () {
     return response()->json([
         'success' => true,
@@ -21,57 +16,44 @@ Route::get('/health', function () {
     ]);
 });
 
-// Room routes
 Route::get('/rooms', [RoomController::class, 'index']);
 Route::get('/rooms/{id}', [RoomController::class, 'show']);
 
-// IMPORTANT: Customers must access booked dates without admin permission.
 Route::get(
     '/rooms/{roomId}/unavailable-dates',
     [BookingController::class, 'unavailableDates']
 );
 
-// Authentication
+Route::get(
+    '/rooms/{roomId}/reviews',
+    [ReviewController::class, 'index']
+);
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Room availability search
 Route::get('/availability', [BookingController::class, 'availability']);
 
-
-/*
-|--------------------------------------------------------------------------
-| Authenticated User Routes
-|--------------------------------------------------------------------------
-*/
-
+// Authenticated user routes
 Route::middleware('auth:sanctum')->group(function () {
 
-    // User details
     Route::get('/me', [AuthController::class, 'me']);
-
-    // Logout
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Customer bookings
+    // Bookings
     Route::post('/bookings', [BookingController::class, 'store']);
     Route::get('/my-bookings', [BookingController::class, 'myBookings']);
 
-    // Cancel customer's own pending booking
     Route::patch(
         '/bookings/{id}/cancel',
         [BookingController::class, 'cancel']
     );
 
+    // Reviews
+    Route::post('/reviews', [ReviewController::class, 'store']);
 });
 
-
-/*
-|--------------------------------------------------------------------------
-| Admin Routes
-|--------------------------------------------------------------------------
-*/
-
+// Admin routes
 Route::middleware(['auth:sanctum', 'admin'])
     ->prefix('admin')
     ->group(function () {
@@ -88,5 +70,4 @@ Route::middleware(['auth:sanctum', 'admin'])
             '/bookings/{id}/status',
             [BookingController::class, 'updateStatus']
         );
-
     });

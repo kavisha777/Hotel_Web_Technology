@@ -15,6 +15,7 @@ class Room extends Model
         'price_per_night',
         'capacity',
         'image',
+        'gallery_images',
         'status',
     ];
 
@@ -24,6 +25,7 @@ class Room extends Model
             'price_per_night' => 'decimal:2',
             'capacity' => 'integer',
             'facilities' => 'array',
+            'gallery_images' => 'array',
         ];
     }
 

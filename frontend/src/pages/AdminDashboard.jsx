@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 import './AdminDashboard.css';
@@ -31,6 +32,7 @@ function AdminDashboard() {
     const [processingBooking, setProcessingBooking] = useState(null);
     const [processingRoom, setProcessingRoom] = useState(null);
 
+    // Load dashboard information.
     const loadDashboard = async (showLoader = true) => {
         try {
             if (showLoader) setLoading(true);
@@ -42,9 +44,29 @@ function AdminDashboard() {
                 api.get('/admin/bookings'),
             ]);
 
-            setRooms(roomResponse.data);
-            setBookings(bookingResponse.data);
+            // Handle Laravel API response structures safely.
+            const roomData = roomResponse.data;
+            const bookingData = bookingResponse.data;
+
+            setRooms(
+                Array.isArray(roomData)
+                    ? roomData
+                    : Array.isArray(roomData?.rooms)
+                        ? roomData.rooms
+                        : []
+            );
+
+            setBookings(
+                Array.isArray(bookingData)
+                    ? bookingData
+                    : Array.isArray(bookingData?.bookings)
+                        ? bookingData.bookings
+                        : []
+            );
+
         } catch (err) {
+            console.error('Dashboard loading error:', err);
+
             setDashboardError(
                 err.response?.data?.message ||
                 'Unable to load dashboard information. Please try again.'
@@ -78,6 +100,7 @@ function AdminDashboard() {
         }
     };
 
+    // Add or update a room.
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -127,6 +150,7 @@ function AdminDashboard() {
 
             resetForm();
             await loadDashboard(false);
+
         } catch (err) {
             const errors = err.response?.data?.errors;
 
@@ -142,6 +166,7 @@ function AdminDashboard() {
         }
     };
 
+    // Edit room.
     const handleEdit = (room) => {
         setEditingId(room.id);
 
@@ -166,10 +191,9 @@ function AdminDashboard() {
         });
     };
 
+    // Delete room.
     const handleDelete = async (roomId) => {
-        if (!window.confirm(
-            'Are you sure you want to delete this room?'
-        )) {
+        if (!window.confirm('Are you sure you want to delete this room?')) {
             return;
         }
 
@@ -192,6 +216,7 @@ function AdminDashboard() {
             }));
 
             await loadDashboard(false);
+
         } catch (err) {
             setRoomFeedback((previous) => ({
                 ...previous,
@@ -206,6 +231,7 @@ function AdminDashboard() {
         }
     };
 
+    // Confirm or cancel booking.
     const handleBookingStatus = async (bookingId, status) => {
         const action = status === 'confirmed' ? 'confirm' : 'cancel';
 
@@ -238,6 +264,7 @@ function AdminDashboard() {
             }));
 
             await loadDashboard(false);
+
         } catch (err) {
             const errors = err.response?.data?.errors;
 
@@ -256,6 +283,7 @@ function AdminDashboard() {
         }
     };
 
+    // Dashboard calculations.
     const pendingBookings = bookings.filter(
         (booking) => booking.status === 'pending'
     ).length;
@@ -271,6 +299,10 @@ function AdminDashboard() {
     const uniqueCustomers = new Set(
         bookings.map((booking) => booking.user?.id).filter(Boolean)
     ).size;
+
+    const availableRooms = rooms.filter(
+        (room) => room.status === 'available'
+    ).length;
 
     const formatPrice = (price) =>
         Number(price || 0).toLocaleString('en-LK');
@@ -317,9 +349,7 @@ function AdminDashboard() {
                     </div>
                 </div>
 
-                <div className="admin-sidebar-label">
-                    MAIN MENU
-                </div>
+                <div className="admin-sidebar-label">MAIN MENU</div>
 
                 <nav className="admin-navigation">
                     <button
@@ -437,11 +467,7 @@ function AdminDashboard() {
 
                         <div>
                             <span>Available Rooms</span>
-                            <strong>
-                                {rooms.filter(
-                                    (room) => room.status === 'available'
-                                ).length}
-                            </strong>
+                            <strong>{availableRooms}</strong>
                         </div>
                     </div>
                 </section>
@@ -470,7 +496,6 @@ function AdminDashboard() {
 
                         <form onSubmit={handleSubmit}>
                             <div className="admin-form-grid">
-
                                 <div className="admin-field">
                                     <label>Room Name</label>
                                     <input
@@ -636,9 +661,7 @@ function AdminDashboard() {
                                         </span>
                                     </div>
 
-                                    <p className="admin-room-type">
-                                        {room.room_type}
-                                    </p>
+                                    <p className="admin-room-type">{room.room_type}</p>
 
                                     <p className="admin-room-description">
                                         {room.description}
@@ -739,9 +762,7 @@ function AdminDashboard() {
                                         </div>
                                     </div>
 
-                                    <span className={`admin-status booking-status-${
-                                        booking.status
-                                    }`}>
+                                    <span className={`admin-status booking-status-${booking.status}`}>
                                         {booking.status}
                                     </span>
                                 </div>
@@ -795,9 +816,7 @@ function AdminDashboard() {
                                                     booking.id,
                                                     'confirmed'
                                                 )}
-                                                disabled={
-                                                    processingBooking === booking.id
-                                                }
+                                                disabled={processingBooking === booking.id}
                                             >
                                                 {processingBooking === booking.id
                                                     ? 'Processing...'
@@ -810,9 +829,7 @@ function AdminDashboard() {
                                                     booking.id,
                                                     'cancelled'
                                                 )}
-                                                disabled={
-                                                    processingBooking === booking.id
-                                                }
+                                                disabled={processingBooking === booking.id}
                                             >
                                                 Cancel Booking
                                             </button>
@@ -824,9 +841,7 @@ function AdminDashboard() {
                                                 booking.id,
                                                 'cancelled'
                                             )}
-                                            disabled={
-                                                processingBooking === booking.id
-                                            }
+                                            disabled={processingBooking === booking.id}
                                         >
                                             Cancel Booking
                                         </button>
