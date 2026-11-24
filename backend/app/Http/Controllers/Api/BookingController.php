@@ -13,7 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class BookingController extends Controller
 {
-    // Search for available rooms
+    private const ACTIVE_STATUSES = ['pending', 'confirmed'];
+
     public function availability(Request $request)
     {
         $validated = $request->validate([
@@ -25,7 +26,7 @@ class BookingController extends Controller
         $rooms = Room::where('status', 'available')
             ->where('capacity', '>=', $validated['guests'])
             ->whereDoesntHave('bookings', function ($query) use ($validated) {
-                $query->where('status', 'confirmed')
+                $query->whereIn('status', self::ACTIVE_STATUSES)
                     ->where('check_in', '<', $validated['check_out'])
                     ->where('check_out', '>', $validated['check_in']);
             })
@@ -39,7 +40,21 @@ class BookingController extends Controller
         ]);
     }
 
-    // Create a booking
+    public function unavailableDates(string $roomId)
+    {
+        $room = Room::findOrFail($roomId);
+
+        $bookings = Booking::where('room_id', $room->id)
+            ->whereIn('status', self::ACTIVE_STATUSES)
+            ->whereDate('check_out', '>', today())
+            ->orderBy('check_in')
+            ->get(['check_in', 'check_out']);
+
+        return response()->json([
+            'bookings' => $bookings,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -53,7 +68,6 @@ class BookingController extends Controller
         ]);
 
         $booking = DB::transaction(function () use ($validated, $request) {
-
             $room = Room::whereKey($validated['room_id'])
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -71,21 +85,23 @@ class BookingController extends Controller
             }
 
             $overlap = Booking::where('room_id', $room->id)
-                ->where('status', 'confirmed')
+                ->whereIn('status', self::ACTIVE_STATUSES)
                 ->where('check_in', '<', $validated['check_out'])
                 ->where('check_out', '>', $validated['check_in'])
                 ->exists();
 
             if ($overlap) {
                 throw ValidationException::withMessages([
-                    'room_id' => ['This room has already been booked for the selected dates.'],
+                    'room_id' => [
+                        'This room is already reserved for some or all of these dates. Please choose different dates.',
+                    ],
                 ]);
             }
 
             $checkIn = Carbon::parse($validated['check_in']);
             $checkOut = Carbon::parse($validated['check_out']);
 
-            $nights = $checkIn->diffInDays($checkOut);
+            $nights = (int) $checkIn->diffInDays($checkOut);
 
             $totalPrice = $nights * (float) $room->price_per_night;
 
@@ -109,7 +125,6 @@ class BookingController extends Controller
         ], 201);
     }
 
-    // Display bookings belonging to the logged-in guest
     public function myBookings(Request $request)
     {
         $bookings = Booking::with('room')
@@ -120,29 +135,43 @@ class BookingController extends Controller
         return response()->json($bookings);
     }
 
-    // Cancel a guest's own booking
+    // Guests can cancel their own pending or confirmed bookings
+    // before the check-in date.
     public function cancel(Request $request, string $id)
     {
-        $booking = Booking::where('user_id', $request->user()->id)
-            ->findOrFail($id);
+        $result = DB::transaction(function () use ($request, $id) {
+            $booking = Booking::where('user_id', $request->user()->id)
+                ->whereKey($id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        if ($booking->status !== 'pending') {
-            return response()->json([
-                'message' => 'Only pending bookings can be cancelled by guests.',
-            ], 422);
-        }
+            if (!in_array($booking->status, self::ACTIVE_STATUSES, true)) {
+                throw ValidationException::withMessages([
+                    'status' => ['This booking cannot be cancelled.'],
+                ]);
+            }
 
-        $booking->update([
-            'status' => 'cancelled',
-        ]);
+            if (Carbon::parse($booking->check_in)->startOfDay()->lte(today()->startOfDay())) {
+                throw ValidationException::withMessages([
+                    'status' => [
+                        'Bookings cannot be cancelled on or after the check-in date.',
+                    ],
+                ]);
+            }
+
+            $booking->update([
+                'status' => 'cancelled',
+            ]);
+
+            return $booking->fresh()->load('room');
+        });
 
         return response()->json([
             'message' => 'Booking cancelled successfully.',
-            'booking' => $booking->fresh(),
+            'booking' => $result,
         ]);
     }
 
-    // Display all bookings for administrators
     public function adminIndex()
     {
         $bookings = Booking::with(['user', 'room'])
@@ -152,14 +181,18 @@ class BookingController extends Controller
         return response()->json($bookings);
     }
 
-    // Update booking status by administrator
     public function updateStatus(Request $request, string $id)
     {
         $validated = $request->validate([
             'status' => ['required', Rule::in(['confirmed', 'cancelled'])],
         ]);
 
-        $booking = DB::transaction(function () use ($id, $validated) {
+        $result = DB::transaction(function () use ($id, $validated) {
+            $existingBooking = Booking::findOrFail($id);
+
+            $room = Room::whereKey($existingBooking->room_id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
             $booking = Booking::whereKey($id)
                 ->lockForUpdate()
@@ -171,17 +204,14 @@ class BookingController extends Controller
                 ]);
             }
 
-            if ($validated['status'] === 'confirmed') {
+            $cancelledPendingCount = 0;
 
-                if ($booking->check_in->isPast()) {
+            if ($validated['status'] === 'confirmed') {
+                if (Carbon::parse($booking->check_in)->startOfDay()->lt(today()->startOfDay())) {
                     throw ValidationException::withMessages([
                         'status' => ['Past bookings cannot be confirmed.'],
                     ]);
                 }
-
-                $room = Room::whereKey($booking->room_id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
 
                 if ($room->status !== 'available') {
                     throw ValidationException::withMessages([
@@ -189,30 +219,55 @@ class BookingController extends Controller
                     ]);
                 }
 
-                $overlap = Booking::where('room_id', $booking->room_id)
+                $confirmedOverlap = Booking::where('room_id', $booking->room_id)
                     ->where('id', '!=', $booking->id)
                     ->where('status', 'confirmed')
                     ->where('check_in', '<', $booking->check_out)
                     ->where('check_out', '>', $booking->check_in)
                     ->exists();
 
-                if ($overlap) {
+                if ($confirmedOverlap) {
                     throw ValidationException::withMessages([
-                        'status' => ['Another confirmed booking overlaps these dates.'],
+                        'status' => [
+                            'This booking overlaps an existing confirmed booking. It cannot be confirmed.',
+                        ],
                     ]);
                 }
+
+                $overlappingPending = Booking::where('room_id', $booking->room_id)
+                    ->where('id', '!=', $booking->id)
+                    ->where('status', 'pending')
+                    ->where('check_in', '<', $booking->check_out)
+                    ->where('check_out', '>', $booking->check_in);
+
+                $cancelledPendingCount = $overlappingPending->update([
+                    'status' => 'cancelled',
+                ]);
             }
 
             $booking->update([
                 'status' => $validated['status'],
             ]);
 
-            return $booking;
+            return [
+                'booking' => $booking,
+                'cancelled_pending_count' => $cancelledPendingCount,
+            ];
         });
 
+        $message = $validated['status'] === 'confirmed'
+            ? 'Booking confirmed successfully.'
+            : 'Booking cancelled successfully.';
+
+        if ($result['cancelled_pending_count'] > 0) {
+            $message .= ' ' . $result['cancelled_pending_count']
+                . ' overlapping pending booking(s) were automatically cancelled.';
+        }
+
         return response()->json([
-            'message' => 'Booking status updated successfully.',
-            'booking' => $booking->load(['user', 'room']),
+            'message' => $message,
+            'booking' => $result['booking']->load(['user', 'room']),
+            'cancelled_pending_count' => $result['cancelled_pending_count'],
         ]);
     }
 }

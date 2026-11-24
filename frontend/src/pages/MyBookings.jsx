@@ -8,6 +8,7 @@ function MyBookings() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
+    const [cancellingId, setCancellingId] = useState(null);
 
     const fetchBookings = async () => {
         try {
@@ -39,6 +40,7 @@ function MyBookings() {
         try {
             setError('');
             setMessage('');
+            setCancellingId(bookingId);
 
             const response = await api.patch(
                 `/bookings/${bookingId}/cancel`
@@ -55,6 +57,8 @@ function MyBookings() {
                 err.response?.data?.message ||
                 'Unable to cancel this booking.'
             );
+        } finally {
+            setCancellingId(null);
         }
     };
 
@@ -110,6 +114,7 @@ function MyBookings() {
             {bookings.length === 0 ? (
                 <div className="card shadow-sm text-center p-5">
                     <h4>No bookings yet</h4>
+
                     <p className="text-muted">
                         You have not made any reservations.
                     </p>
@@ -136,62 +141,83 @@ function MyBookings() {
                         </thead>
 
                         <tbody>
-                            {bookings.map((booking) => (
-                                <tr key={booking.id}>
-                                    <td>
-                                        <strong>
-                                            {booking.room?.name || 'Room unavailable'}
-                                        </strong>
-                                    </td>
+                            {bookings.map((booking) => {
+                                const canCancel =
+                                    ['pending', 'confirmed'].includes(
+                                        booking.status
+                                    ) &&
+                                    String(booking.check_in).slice(0, 10) >
+                                    new Date().toLocaleDateString('en-CA');
 
-                                    <td>
-                                        {String(booking.check_in).slice(0, 10)}
-                                    </td>
+                                return (
+                                    <tr key={booking.id}>
+                                        <td>
+                                            <strong>
+                                                {booking.room?.name ||
+                                                    'Room unavailable'}
+                                            </strong>
+                                        </td>
 
-                                    <td>
-                                        {String(booking.check_out).slice(0, 10)}
-                                    </td>
+                                        <td>
+                                            {String(booking.check_in).slice(0, 10)}
+                                        </td>
 
-                                    <td>{booking.guests}</td>
+                                        <td>
+                                            {String(booking.check_out).slice(0, 10)}
+                                        </td>
 
-                                    <td>
-                                        {Number(booking.total_price).toLocaleString(
-                                            'en-GB'
-                                        )}
-                                    </td>
+                                        <td>{booking.guests}</td>
 
-                                    <td>
-                                        <span
-                                            className={`badge ${getStatusClass(
-                                                booking.status
-                                            )}`}
-                                        >
-                                            {booking.status}
-                                        </span>
-                                    </td>
+                                        <td>
+                                            {Number(
+                                                booking.total_price
+                                            ).toLocaleString('en-GB')}
+                                        </td>
 
-                                    <td>
-                                        {booking.status === 'pending' ? (
-                                            <button
-                                                className="btn btn-danger btn-sm"
-                                                onClick={() =>
-                                                    handleCancel(booking.id)
-                                                }
+                                        <td>
+                                            <span
+                                                className={`badge ${getStatusClass(
+                                                    booking.status
+                                                )}`}
                                             >
-                                                Cancel Booking
-                                            </button>
-                                        ) : (
-                                            <span className="text-muted">
-                                                No actions
+                                                {booking.status}
                                             </span>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+
+                                        <td>
+                                            {canCancel ? (
+                                                <button
+                                                    className="btn btn-danger btn-sm"
+                                                    onClick={() =>
+                                                        handleCancel(booking.id)
+                                                    }
+                                                    disabled={
+                                                        cancellingId === booking.id
+                                                    }
+                                                >
+                                                    {cancellingId === booking.id
+                                                        ? 'Cancelling...'
+                                                        : 'Cancel Booking'}
+                                                </button>
+                                            ) : (
+                                                <span className="text-muted">
+                                                    No actions
+                                                </span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
             )}
+
+            <div className="alert alert-info mt-4">
+                <strong>Cancellation policy:</strong> You can cancel pending
+                or confirmed bookings before the check-in date. Bookings
+                cannot be cancelled on or after the check-in date.
+            </div>
         </div>
     );
 }

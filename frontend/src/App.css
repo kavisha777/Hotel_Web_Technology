@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
 :root {
@@ -22,9 +23,17 @@ body {
     color: var(--dark);
 }
 
+img {
+    max-width: 100%;
+}
+
 button {
     cursor: pointer;
 }
+
+/* =========================================
+   NAVIGATION
+========================================= */
 
 .navbar {
     padding: 15px 0;
@@ -44,17 +53,22 @@ button {
     color: var(--secondary) !important;
 }
 
-header {
+/* =========================================
+   HOMEPAGE HERO
+   Scoped to avoid affecting admin headers
+========================================= */
+
+.home-hero {
     background-color: var(--primary);
     background-position: center;
     background-size: cover;
 }
 
-header h1 {
+.home-hero h1 {
     font-weight: 800;
 }
 
-header .btn-primary {
+.home-hero .btn-primary {
     background: var(--secondary);
     border-color: var(--secondary);
     color: #17252a;
@@ -62,7 +76,7 @@ header .btn-primary {
     font-weight: 600;
 }
 
-header .btn-primary:hover {
+.home-hero .btn-primary:hover {
     background: #bd9147;
     border-color: #bd9147;
 }
@@ -70,6 +84,10 @@ header .btn-primary:hover {
 section {
     scroll-margin-top: 80px;
 }
+
+/* =========================================
+   CARDS
+========================================= */
 
 .card {
     border: none;
@@ -80,13 +98,17 @@ section {
 
 .card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.09) !important;
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.09);
 }
 
 .card-img-top {
     width: 100%;
     object-fit: cover;
 }
+
+/* =========================================
+   BUTTONS
+========================================= */
 
 .btn {
     border-radius: 7px;
@@ -103,6 +125,10 @@ section {
     border-color: #20596a;
 }
 
+/* =========================================
+   FORMS
+========================================= */
+
 .form-control,
 .form-select {
     padding: 11px 13px;
@@ -115,13 +141,25 @@ section {
     box-shadow: 0 0 0 0.2rem rgba(18, 60, 74, 0.15);
 }
 
+/* =========================================
+   TABLES
+========================================= */
+
 .table {
-    background: white;
+    background: #ffffff;
 }
 
 .table th {
     white-space: nowrap;
 }
+
+.table-responsive {
+    border-radius: 8px;
+}
+
+/* =========================================
+   FOOTER
+========================================= */
 
 footer {
     background: var(--dark);
@@ -130,6 +168,10 @@ footer {
 footer p {
     color: #ced4da;
 }
+
+/* =========================================
+   ALERTS AND BADGES
+========================================= */
 
 .alert {
     border-radius: 8px;
@@ -140,20 +182,61 @@ footer p {
     font-weight: 500;
 }
 
+/* =========================================
+   LOADING
+========================================= */
+
 .spinner-border {
     width: 2.5rem;
     height: 2.5rem;
 }
 
+/* =========================================
+   ADMIN HEADER OVERRIDE
+========================================= */
+
+.admin-layout .admin-topbar {
+    background: #ffffff !important;
+    color: #123c4a !important;
+}
+
+.admin-layout .admin-topbar > div:first-child > span {
+    color: #526872 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.admin-layout .admin-topbar h2 {
+    color: #123c4a !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.admin-layout .admin-topbar-right {
+    color: #405761 !important;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* =========================================
+   RESPONSIVE DESIGN
+========================================= */
+
+@media (max-width: 991px) {
+    .display-3 {
+        font-size: 2.7rem;
+    }
+
+    .container {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+}
+
 @media (max-width: 768px) {
-    header {
-        min-height: 400px !important;
-    }
-
-    header h1 {
-        font-size: 2.2rem;
-    }
-
     .navbar-nav {
         padding-top: 15px;
         align-items: flex-start !important;
@@ -170,71 +253,17 @@ footer p {
     }
 }
 
-
-
-
-
-/* Global improvements */
-html {
-    scroll-behavior: smooth;
-}
-
-body {
-    margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    background-color: #ffffff;
-    color: #252525;
-}
-
-img {
-    max-width: 100%;
-}
-
-.card {
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
-}
-
-.btn {
-    transition: all 0.2s ease;
-}
-
-.table-responsive {
-    border-radius: 8px;
-}
-
-section {
-    scroll-margin-top: 80px;
-}
-
-/* Tablet screens */
-@media (max-width: 991px) {
-    .display-3 {
-        font-size: 2.7rem;
-    }
-
-    .container {
-        padding-left: 18px;
-        padding-right: 18px;
-    }
-}
-
-/* Mobile screens */
 @media (max-width: 576px) {
-    .display-3 {
-        font-size: 2rem;
-    }
-
     h1 {
         font-size: 1.8rem;
     }
 
     h2 {
         font-size: 1.5rem;
+    }
+
+    .display-3 {
+        font-size: 2rem;
     }
 
     .btn-lg {

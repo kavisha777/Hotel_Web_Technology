@@ -1,14 +1,16 @@
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Routes,
     Route,
     Navigate,
     Link,
     useLocation,
+    useNavigate,
 } from 'react-router-dom';
 
 import Home from './pages/Home';
+import Rooms from './pages/Rooms';
 import Booking from './pages/Booking';
 import MyBookings from './pages/MyBookings';
 import AdminDashboard from './pages/AdminDashboard';
@@ -29,39 +31,39 @@ function ProtectedRoute({ user, children, adminOnly = false }) {
 
 function AppContent() {
     const location = useLocation();
-
-    const [authType, setAuthType] = useState(null);
+    const navigate = useNavigate();
 
     const [user, setUser] = useState(() => {
         try {
-            const savedUser = localStorage.getItem('user');
-            return savedUser ? JSON.parse(savedUser) : null;
+            return JSON.parse(localStorage.getItem('user') || 'null');
         } catch {
+            localStorage.removeItem('user');
             return null;
         }
     });
 
+    const [authType, setAuthType] = useState(null);
     const [checkingAuth, setCheckingAuth] = useState(true);
+    const [selectedRoomId, setSelectedRoomId] = useState(null);
 
-    // Verify authentication when the application starts
+    // Verify the saved login token when the application starts.
     useEffect(() => {
         const verifyUser = async () => {
             const token = localStorage.getItem('auth_token');
 
             if (!token) {
-                setUser(null);
                 setCheckingAuth(false);
                 return;
             }
 
             try {
                 const response = await api.get('/me');
+                const authenticatedUser = response.data.user || response.data;
 
-                setUser(response.data.user);
-
+                setUser(authenticatedUser);
                 localStorage.setItem(
                     'user',
-                    JSON.stringify(response.data.user)
+                    JSON.stringify(authenticatedUser)
                 );
             } catch (error) {
                 localStorage.removeItem('auth_token');
@@ -75,7 +77,25 @@ function AppContent() {
         verifyUser();
     }, []);
 
-    // Handle successful login or registration
+    // Start booking a particular room.
+    const handleBookNow = (roomId) => {
+        if (!roomId) {
+            navigate('/rooms');
+            return;
+        }
+
+        setSelectedRoomId(roomId);
+
+        if (user) {
+            navigate('/booking', {
+                state: { selectedRoomId: roomId },
+            });
+        } else {
+            setAuthType('login');
+        }
+    };
+
+    // Called after successful login or registration.
     const handleAuthSuccess = (authenticatedUser) => {
         setUser(authenticatedUser);
 
@@ -85,29 +105,48 @@ function AppContent() {
         );
 
         setAuthType(null);
+
+        // Continue the booking process if a room was selected.
+        if (selectedRoomId) {
+            navigate('/booking', {
+                state: { selectedRoomId },
+            });
+
+            setSelectedRoomId(null);
+        }
     };
 
-    // Handle logout
+    // Logout the current user.
     const handleLogout = async () => {
         try {
             await api.post('/logout');
         } catch (error) {
-            console.error('Logout failed:', error);
+            console.error('Logout error:', error);
+        } finally {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user');
+
+            setUser(null);
+            setSelectedRoomId(null);
+            setAuthType(null);
+
+            navigate('/');
         }
-
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user');
-
-        setUser(null);
     };
 
-    // Show loading screen while checking authentication
+    const openLogin = () => {
+        setAuthType('login');
+    };
+
     if (checkingAuth) {
         return (
             <div className="d-flex justify-content-center align-items-center min-vh-100">
                 <div className="text-center">
-                    <div className="spinner-border text-dark" />
-                    <p className="mt-3">Loading Coastal Haven...</p>
+                    <div
+                        className="spinner-border text-primary mb-3"
+                        role="status"
+                    />
+                    <p className="text-muted">Loading Coastal Haven...</p>
                 </div>
             </div>
         );
@@ -115,27 +154,58 @@ function AppContent() {
 
     return (
         <>
-            {location.pathname !== '/' && (
-                <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
-                    <div className="container">
+            {/* NAVIGATION BAR */}
+            <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+                <div className="container">
+                    <Link
+                        className="navbar-brand fw-bold"
+                        to="/"
+                    >
+                        <span className="text-primary">COASTAL</span> HAVEN
+                    </Link>
 
-                        <Link className="navbar-brand fw-bold" to="/">
-                            COASTAL HAVEN
-                        </Link>
+                    <button
+                        className="navbar-toggler"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#mainNavbar"
+                        aria-controls="mainNavbar"
+                        aria-expanded="false"
+                        aria-label="Toggle navigation"
+                    >
+                        <span className="navbar-toggler-icon" />
+                    </button>
 
-                        <div className="d-flex flex-wrap align-items-center gap-3">
-
-                            <Link className="text-white text-decoration-none" to="/">
+                    <div
+                        className="collapse navbar-collapse"
+                        id="mainNavbar"
+                    >
+                        <div className="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+                            <Link
+                                className={`nav-link ${
+                                    location.pathname === '/' ? 'active fw-bold' : ''
+                                }`}
+                                to="/"
+                            >
                                 Home
                             </Link>
 
-                            <Link className="text-white text-decoration-none" to="/booking">
-                                Book a Room
+                            <Link
+                                className={`nav-link ${
+                                    location.pathname === '/rooms' ? 'active fw-bold' : ''
+                                }`}
+                                to="/rooms"
+                            >
+                                Explore Rooms
                             </Link>
 
-                            {user && (
+                            {user && user.role !== 'admin' && (
                                 <Link
-                                    className="text-white text-decoration-none"
+                                    className={`nav-link ${
+                                        location.pathname === '/my-bookings'
+                                            ? 'active fw-bold'
+                                            : ''
+                                    }`}
                                     to="/my-bookings"
                                 >
                                     My Bookings
@@ -144,7 +214,11 @@ function AppContent() {
 
                             {user?.role === 'admin' && (
                                 <Link
-                                    className="text-white text-decoration-none"
+                                    className={`nav-link ${
+                                        location.pathname === '/admin'
+                                            ? 'active fw-bold'
+                                            : ''
+                                    }`}
                                     to="/admin"
                                 >
                                     Admin Dashboard
@@ -152,41 +226,51 @@ function AppContent() {
                             )}
 
                             {user ? (
-                                <>
-                                    <span className="text-white">
-                                        {user.name}
+                                <div className="d-flex align-items-center gap-2 ms-lg-3 mt-2 mt-lg-0">
+                                    <span className="text-muted small">
+                                        Welcome, <strong>{user.name}</strong>
                                     </span>
 
                                     <button
-                                        className="btn btn-outline-light btn-sm"
+                                        type="button"
+                                        className="btn btn-outline-danger btn-sm"
                                         onClick={handleLogout}
                                     >
                                         Logout
                                     </button>
-                                </>
+                                </div>
                             ) : (
                                 <button
-                                    className="btn btn-outline-light btn-sm"
-                                    onClick={() => setAuthType('login')}
+                                    type="button"
+                                    className="btn btn-primary ms-lg-3 mt-2 mt-lg-0 px-4"
+                                    onClick={openLogin}
                                 >
                                     Login
                                 </button>
                             )}
-
                         </div>
                     </div>
-                </nav>
-            )}
+                </div>
+            </nav>
 
+            {/* APPLICATION ROUTES */}
             <Routes>
                 <Route
                     path="/"
                     element={
                         <Home
                             user={user}
-                            onLogin={() => setAuthType('login')}
-                            onRegister={() => setAuthType('register')}
-                            onLogout={handleLogout}
+                            onLogin={openLogin}
+                            onBookNow={handleBookNow}
+                        />
+                    }
+                />
+
+                <Route
+                    path="/rooms"
+                    element={
+                        <Rooms
+                            onBookNow={handleBookNow}
                         />
                     }
                 />
@@ -194,11 +278,14 @@ function AppContent() {
                 <Route
                     path="/booking"
                     element={
-                        <Booking
-                            user={user}
-                            onLogin={() => setAuthType('login')}
-                            onRegister={() => setAuthType('register')}
-                        />
+                        <ProtectedRoute user={user}>
+                            <Booking
+                                user={user}
+                                initialSelectedRoomId={
+                                    location.state?.selectedRoomId || null
+                                }
+                            />
+                        </ProtectedRoute>
                     }
                 />
 
@@ -229,20 +316,19 @@ function AppContent() {
                 />
             </Routes>
 
+            {/* LOGIN AND REGISTRATION POPUP */}
             {authType && (
                 <AuthModal
                     type={authType}
                     onClose={() => setAuthType(null)}
                     onSuccess={handleAuthSuccess}
-                    onSwitch={(newType) => setAuthType(newType)}
+                    onSwitch={setAuthType}
                 />
             )}
         </>
     );
 }
 
-function App() {
+export default function App() {
     return <AppContent />;
 }
-
-export default App;

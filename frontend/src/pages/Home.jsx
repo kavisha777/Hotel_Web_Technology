@@ -3,17 +3,29 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 
-function Home() {
+function Home({ onBookNow }) {
     const [rooms, setRooms] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+
+    const fallbackImages = [
+        'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=900&q=80',
+        'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=900&q=80',
+        'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=900&q=80',
+    ];
 
     useEffect(() => {
         const fetchRooms = async () => {
             try {
                 const response = await api.get('/rooms');
-                setRooms(response.data);
+
+                const data = Array.isArray(response.data)
+                    ? response.data
+                    : response.data.rooms || response.data.data || [];
+
+                setRooms(data);
             } catch (err) {
+                console.error('Room loading error:', err);
                 setError('Unable to load rooms. Please try again later.');
             } finally {
                 setLoading(false);
@@ -56,22 +68,34 @@ function Home() {
         },
     ];
 
+    const getRoomImage = (image, index) => {
+        if (!image) {
+            return fallbackImages[index % fallbackImages.length];
+        }
+
+        if (image.startsWith('http')) {
+            return image;
+        }
+
+        return `http://127.0.0.1:8000/storage/${image}`;
+    };
+
     return (
         <>
-            {/* Hero Section */}
+            {/* HERO */}
             <section
                 className="text-white d-flex align-items-center"
                 style={{
-                    minHeight: '75vh',
+                    minHeight: '80vh',
                     backgroundImage:
-                        "linear-gradient(rgba(0,0,0,0.48), rgba(0,0,0,0.48)), url('https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=2000&q=85')",
+                        "linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url('https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=2000&q=85')",
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                 }}
             >
                 <div className="container py-5">
                     <div className="col-lg-8">
-                        <p className="text-uppercase fw-semibold">
+                        <p className="text-uppercase fw-semibold mb-3">
                             Welcome to Coastal Haven
                         </p>
 
@@ -81,61 +105,56 @@ function Home() {
 
                         <p className="lead my-4">
                             Discover peaceful accommodation, beautiful coastal
-                            surroundings and memorable holiday experiences.
+                            surroundings and unforgettable holiday experiences.
+                            Your relaxing getaway starts here.
                         </p>
 
-                        <Link
-                            to="/booking"
-                            className="btn btn-primary btn-lg me-2"
-                        >
+                        <Link to="/rooms" className="btn btn-primary btn-lg me-2 mb-2">
                             Book Your Stay
                         </Link>
 
-                        <a
-                            href="#rooms"
-                            className="btn btn-outline-light btn-lg"
-                        >
+                        <Link to="/rooms" className="btn btn-outline-light btn-lg mb-2">
                             Explore Rooms
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </section>
 
-            {/* Introduction */}
+            {/* INTRODUCTION */}
             <section className="py-5">
                 <div className="container">
-                    <div className="row align-items-center g-4">
+                    <div className="row align-items-center g-5">
                         <div className="col-lg-6">
                             <img
                                 src="https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1000&q=85"
-                                alt="Beautiful coastal resort"
+                                alt="Coastal holiday accommodation"
                                 className="img-fluid rounded shadow"
+                                style={{ width: '100%', height: '400px', objectFit: 'cover' }}
                             />
                         </div>
 
                         <div className="col-lg-6">
-                            <p className="text-primary fw-semibold">
-                                ABOUT COASTAL HAVEN
+                            <p className="text-primary fw-semibold text-uppercase">
+                                About Coastal Haven
                             </p>
 
-                            <h2 className="fw-bold">
+                            <h2 className="display-6 fw-bold mb-4">
                                 Experience Comfort by the Coast
                             </h2>
 
                             <p className="text-muted">
-                                Coastal Haven is a welcoming holiday
-                                accommodation concept designed for guests
-                                seeking relaxation, comfort and a memorable
-                                coastal experience.
+                                Coastal Haven is a welcoming coastal accommodation
+                                destination designed for guests seeking relaxation,
+                                comfort and memorable holiday experiences.
                             </p>
 
                             <p className="text-muted">
-                                Choose from our carefully presented room
-                                options, check availability and submit your
-                                reservation online.
+                                Explore our rooms, check availability and reserve
+                                your preferred accommodation through our online
+                                booking system.
                             </p>
 
-                            <Link to="/booking" className="btn btn-primary">
+                            <Link to="/rooms" className="btn btn-primary mt-3">
                                 Find Your Room
                             </Link>
                         </div>
@@ -143,28 +162,29 @@ function Home() {
                 </div>
             </section>
 
-            {/* Facilities */}
+            {/* FACILITIES */}
             <section className="py-5 bg-light">
                 <div className="container">
                     <div className="text-center mb-5">
-                        <p className="text-primary fw-semibold">
-                            OUR FACILITIES
+                        <p className="text-primary fw-semibold text-uppercase">
+                            Our Facilities
                         </p>
-                        <h2 className="fw-bold">Everything for Your Comfort</h2>
+                        <h2 className="fw-bold display-6">
+                            Everything for Your Comfort
+                        </h2>
+                        <p className="text-muted">
+                            Enjoy convenient facilities during your stay.
+                        </p>
                     </div>
 
                     <div className="row g-4">
                         {facilities.map((facility) => (
                             <div className="col-md-6 col-lg-4" key={facility.title}>
-                                <div className="card border-0 shadow-sm h-100 p-4">
-                                    <div className="fs-1 mb-3">
+                                <div className="card border-0 shadow-sm h-100 p-4 text-center">
+                                    <div className="display-4 mb-3">
                                         {facility.icon}
                                     </div>
-
-                                    <h5 className="fw-bold">
-                                        {facility.title}
-                                    </h5>
-
+                                    <h5 className="fw-bold">{facility.title}</h5>
                                     <p className="text-muted mb-0">
                                         {facility.description}
                                     </p>
@@ -175,91 +195,93 @@ function Home() {
                 </div>
             </section>
 
-            {/* Rooms */}
-            <section className="py-5" id="rooms">
+            {/* FEATURED ROOMS */}
+            <section className="py-5">
                 <div className="container">
                     <div className="text-center mb-5">
-                        <p className="text-primary fw-semibold">
-                            ACCOMMODATION
+                        <p className="text-primary fw-semibold text-uppercase">
+                            Our Accommodation
                         </p>
-
-                        <h2 className="fw-bold">Explore Our Rooms</h2>
-
+                        <h2 className="fw-bold display-6">
+                            Discover Our Featured Rooms
+                        </h2>
                         <p className="text-muted">
-                            Find the perfect accommodation for your stay.
+                            Take a first look at our accommodation options.
                         </p>
                     </div>
 
-                    {loading ? (
-                        <div className="text-center">
-                            <div className="spinner-border text-primary" />
-                            <p className="mt-3">Loading rooms...</p>
+                    {loading && (
+                        <div className="text-center py-5">
+                            <div className="spinner-border text-primary" role="status" />
+                            <p className="mt-3 text-muted">Loading rooms...</p>
                         </div>
-                    ) : error ? (
-                        <div className="alert alert-danger">{error}</div>
-                    ) : rooms.length === 0 ? (
-                        <p className="text-center text-muted">
+                    )}
+
+                    {!loading && error && (
+                        <div className="alert alert-danger text-center">{error}</div>
+                    )}
+
+                    {!loading && !error && rooms.length === 0 && (
+                        <div className="alert alert-info text-center">
                             No rooms are currently available.
-                        </p>
-                    ) : (
+                        </div>
+                    )}
+
+                    {!loading && !error && rooms.length > 0 && (
                         <div className="row g-4">
-                            {rooms.map((room) => (
-                                <div
-                                    className="col-md-6 col-lg-4"
-                                    key={room.id}
-                                >
+                            {rooms.slice(0, 3).map((room, index) => (
+                                <div className="col-md-6 col-lg-4" key={room.id}>
                                     <div className="card h-100 shadow-sm border-0">
-                                        {room.image && (
-                                            <img
-                                                src={`http://127.0.0.1:8000/storage/${room.image}`}
-                                                alt={room.name}
-                                                className="card-img-top"
-                                                style={{
-                                                    height: '230px',
-                                                    objectFit: 'cover',
-                                                }}
-                                            />
-                                        )}
+                                        <img
+                                            src={getRoomImage(room.image, index)}
+                                            alt={room.name}
+                                            className="card-img-top"
+                                            style={{
+                                                height: '240px',
+                                                objectFit: 'cover',
+                                            }}
+                                            onError={(event) => {
+                                                event.currentTarget.onerror = null;
+                                                event.currentTarget.src =
+                                                    fallbackImages[index % fallbackImages.length];
+                                            }}
+                                        />
 
                                         <div className="card-body d-flex flex-column">
-                                            <h5 className="fw-bold">
-                                                {room.name}
-                                            </h5>
+                                            <h5 className="fw-bold">{room.name}</h5>
 
-                                            <p className="text-muted small">
-                                                {room.room_type}
+                                            <p className="text-primary small fw-semibold">
+                                                {room.room_type || 'Accommodation'}
                                             </p>
 
-                                            <p>{room.description}</p>
+                                            <p className="text-muted">
+                                                {room.description}
+                                            </p>
 
-                                            <p className="mb-2">
-                                                <strong>Maximum Guests:</strong>{' '}
+                                            <p>
+                                                <strong>Maximum guests:</strong>{' '}
                                                 {room.capacity}
                                             </p>
-
-                                            {Array.isArray(room.facilities) && (
-                                                <p className="small text-muted">
-                                                    {room.facilities.join(' • ')}
-                                                </p>
-                                            )}
 
                                             <div className="mt-auto">
                                                 <h5 className="text-primary fw-bold">
                                                     LKR{' '}
-                                                    {Number(
-                                                        room.price_per_night
-                                                    ).toLocaleString('en-GB')}
-                                                    <small className="text-muted fs-6">
+                                                    {Number(room.price_per_night).toLocaleString('en-LK')}
+                                                    <small className="text-muted fs-6 fw-normal">
                                                         {' '}/ night
                                                     </small>
                                                 </h5>
 
-                                                <Link
-                                                    to="/booking"
+                                                <button
+                                                    type="button"
                                                     className="btn btn-primary w-100"
+                                                    disabled={room.status !== 'available'}
+                                                    onClick={() => onBookNow?.(room.id)}
                                                 >
-                                                    Book Now
-                                                </Link>
+                                                    {room.status === 'available'
+                                                        ? 'Book This Room'
+                                                        : 'Unavailable'}
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -267,25 +289,95 @@ function Home() {
                             ))}
                         </div>
                     )}
+
+                    <div className="text-center mt-5">
+                        <Link to="/rooms" className="btn btn-outline-primary btn-lg">
+                            View All Rooms
+                        </Link>
+                    </div>
                 </div>
             </section>
 
-            {/* Call to Action */}
-            <section className="py-5 text-white text-center bg-dark">
+            {/* BOOKING PROCESS */}
+            <section className="py-5 bg-light">
                 <div className="container">
-                    <h2 className="fw-bold">
+                    <div className="text-center mb-5">
+                        <p className="text-primary fw-semibold text-uppercase">
+                            Simple Reservations
+                        </p>
+                        <h2 className="fw-bold display-6">
+                            Book Your Stay in Three Steps
+                        </h2>
+                    </div>
+
+                    <div className="row g-4 text-center">
+                        {[
+                            {
+                                number: '01',
+                                title: 'Choose Your Room',
+                                description: 'Explore our accommodation options and select your preferred room.',
+                            },
+                            {
+                                number: '02',
+                                title: 'Check Availability',
+                                description: 'Enter your travel dates and number of guests.',
+                            },
+                            {
+                                number: '03',
+                                title: 'Submit Your Booking',
+                                description: 'Review your booking details and submit your reservation request.',
+                            },
+                        ].map((step) => (
+                            <div className="col-md-4" key={step.number}>
+                                <div className="bg-white rounded shadow-sm p-4 h-100">
+                                    <div className="display-4 text-primary mb-3">
+                                        {step.number}
+                                    </div>
+                                    <h5 className="fw-bold">{step.title}</h5>
+                                    <p className="text-muted mb-0">
+                                        {step.description}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* FINAL CALL TO ACTION */}
+            <section
+                className="py-5 text-white text-center"
+                style={{
+                    background:
+                        'linear-gradient(rgba(0,0,0,0.75), rgba(0,0,0,0.75)), url(https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?auto=format&fit=crop&w=1800&q=85) center/cover',
+                }}
+            >
+                <div className="container py-4">
+                    <h2 className="fw-bold display-6">
                         Ready for Your Next Holiday?
                     </h2>
-
-                    <p className="lead">
-                        Find your ideal room and make your reservation today.
+                    <p className="lead my-3">
+                        Discover your ideal room and enjoy a relaxing coastal
+                        getaway with Coastal Haven.
                     </p>
-
-                    <Link to="/booking" className="btn btn-primary btn-lg">
-                        Book Your Stay
+                    <Link to="/rooms" className="btn btn-primary btn-lg mt-2">
+                        Explore Available Rooms
                     </Link>
                 </div>
             </section>
+
+            {/* FOOTER */}
+            <footer className="bg-dark text-white py-4">
+                <div className="container text-center">
+                    <h5 className="fw-bold">COASTAL HAVEN</h5>
+                    <p className="text-white-50 mb-2">
+                        Your Perfect Coastal Escape
+                    </p>
+                    <p className="small text-white-50 mb-0">
+                        © {new Date().getFullYear()} Coastal Haven. All rights reserved.
+                    </p>
+                </div>
+            </footer>
         </>
     );
 }
