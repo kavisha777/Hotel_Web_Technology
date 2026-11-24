@@ -5,20 +5,21 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Room;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Carbon\Carbon;
 
 class BookingController extends Controller
 {
-    // Check room availability
+    // Search for available rooms
     public function availability(Request $request)
     {
         $validated = $request->validate([
-            'check_in' => 'required|date|after_or_equal:today',
-            'check_out' => 'required|date|after:check_in',
-            'guests' => 'required|integer|min:1',
+            'check_in' => ['required', 'date', 'after_or_equal:today'],
+            'check_out' => ['required', 'date', 'after:check_in'],
+            'guests' => ['required', 'integer', 'min:1'],
         ]);
 
         $rooms = Room::where('status', 'available')
@@ -31,8 +32,10 @@ class BookingController extends Controller
             ->get();
 
         return response()->json([
-            'success' => true,
-            'data' => $rooms,
+            'rooms' => $rooms,
+            'message' => $rooms->isEmpty()
+                ? 'No rooms are available for these dates.'
+                : 'Available rooms retrieved successfully.',
         ]);
     }
 
@@ -40,15 +43,18 @@ class BookingController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'room_id' => 'required|exists:rooms,id',
-            'check_in' => 'required|date|after_or_equal:today',
-            'check_out' => 'required|date|after:check_in',
-            'guests' => 'required|integer|min:1',
+            'room_id' => ['required', 'exists:rooms,id'],
+            'guest_name' => ['required', 'string', 'max:255'],
+            'guest_email' => ['required', 'email', 'max:255'],
+            'guest_contact_number' => ['required', 'string', 'max:30'],
+            'check_in' => ['required', 'date', 'after_or_equal:today'],
+            'check_out' => ['required', 'date', 'after:check_in'],
+            'guests' => ['required', 'integer', 'min:1'],
         ]);
 
-        $booking = DB::transaction(function () use ($request, $validated) {
+        $booking = DB::transaction(function () use ($validated, $request) {
 
-            $room = Room::where('id', $validated['room_id'])
+            $room = Room::whereKey($validated['room_id'])
                 ->lockForUpdate()
                 ->firstOrFail();
 
@@ -60,7 +66,7 @@ class BookingController extends Controller
 
             if ($validated['guests'] > $room->capacity) {
                 throw ValidationException::withMessages([
-                    'guests' => ['The selected room cannot accommodate this number of guests.'],
+                    'guests' => ['The number of guests exceeds this room capacity.'],
                 ]);
             }
 
@@ -72,18 +78,23 @@ class BookingController extends Controller
 
             if ($overlap) {
                 throw ValidationException::withMessages([
-                    'room_id' => ['This room is already booked for the selected dates.'],
+                    'room_id' => ['This room has already been booked for the selected dates.'],
                 ]);
             }
 
-            $nights = Carbon::parse($validated['check_in'])
-                ->diffInDays(Carbon::parse($validated['check_out']));
+            $checkIn = Carbon::parse($validated['check_in']);
+            $checkOut = Carbon::parse($validated['check_out']);
 
-            $totalPrice = $nights * $room->price_per_night;
+            $nights = $checkIn->diffInDays($checkOut);
+
+            $totalPrice = $nights * (float) $room->price_per_night;
 
             return Booking::create([
                 'user_id' => $request->user()->id,
                 'room_id' => $room->id,
+                'guest_name' => $validated['guest_name'],
+                'guest_email' => $validated['guest_email'],
+                'guest_contact_number' => $validated['guest_contact_number'],
                 'check_in' => $validated['check_in'],
                 'check_out' => $validated['check_out'],
                 'guests' => $validated['guests'],
@@ -93,13 +104,12 @@ class BookingController extends Controller
         });
 
         return response()->json([
-            'success' => true,
-            'message' => 'Booking submitted successfully.',
-            'data' => $booking->load('room'),
+            'message' => 'Booking submitted successfully. Awaiting administrator confirmation.',
+            'booking' => $booking->load('room'),
         ], 201);
     }
 
-    // Guest: view own bookings
+    // Display bookings belonging to the logged-in guest
     public function myBookings(Request $request)
     {
         $bookings = Booking::with('room')
@@ -107,66 +117,51 @@ class BookingController extends Controller
             ->latest()
             ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $bookings,
-        ]);
+        return response()->json($bookings);
     }
 
-    // Guest: cancel own booking
-    public function cancel(Request $request, $id)
+    // Cancel a guest's own booking
+    public function cancel(Request $request, string $id)
     {
         $booking = Booking::where('user_id', $request->user()->id)
             ->findOrFail($id);
 
-        if (!in_array($booking->status, ['pending', 'confirmed'])) {
+        if ($booking->status !== 'pending') {
             return response()->json([
-                'success' => false,
-                'message' => 'This booking cannot be cancelled.',
+                'message' => 'Only pending bookings can be cancelled by guests.',
             ], 422);
         }
 
-        if (
-            $booking->status === 'confirmed' &&
-            $booking->check_in <= now()->toDateString()
-        ) {
-            return response()->json([
-                'success' => false,
-                'message' => 'A booking that has already started cannot be cancelled online.',
-            ], 422);
-        }
-
-        $booking->update(['status' => 'cancelled']);
+        $booking->update([
+            'status' => 'cancelled',
+        ]);
 
         return response()->json([
-            'success' => true,
             'message' => 'Booking cancelled successfully.',
+            'booking' => $booking->fresh(),
         ]);
     }
 
-    // Admin: view all bookings
+    // Display all bookings for administrators
     public function adminIndex()
     {
         $bookings = Booking::with(['user', 'room'])
             ->latest()
             ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $bookings,
-        ]);
+        return response()->json($bookings);
     }
 
-    // Admin: confirm or cancel a booking
-    public function updateStatus(Request $request, $id)
+    // Update booking status by administrator
+    public function updateStatus(Request $request, string $id)
     {
         $validated = $request->validate([
-            'status' => 'required|in:confirmed,cancelled',
+            'status' => ['required', Rule::in(['confirmed', 'cancelled'])],
         ]);
 
         $booking = DB::transaction(function () use ($id, $validated) {
 
-            $booking = Booking::where('id', $id)
+            $booking = Booking::whereKey($id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
@@ -178,13 +173,13 @@ class BookingController extends Controller
 
             if ($validated['status'] === 'confirmed') {
 
-                if ($booking->check_in < now()->toDateString()) {
+                if ($booking->check_in->isPast()) {
                     throw ValidationException::withMessages([
-                        'status' => ['A past booking cannot be confirmed.'],
+                        'status' => ['Past bookings cannot be confirmed.'],
                     ]);
                 }
 
-                $room = Room::where('id', $booking->room_id)
+                $room = Room::whereKey($booking->room_id)
                     ->lockForUpdate()
                     ->firstOrFail();
 
@@ -216,9 +211,8 @@ class BookingController extends Controller
         });
 
         return response()->json([
-            'success' => true,
             'message' => 'Booking status updated successfully.',
-            'data' => $booking,
+            'booking' => $booking->load(['user', 'room']),
         ]);
     }
 }

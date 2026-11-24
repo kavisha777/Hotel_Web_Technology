@@ -9,37 +9,65 @@ class RoomSeeder extends Seeder
 {
     public function run(): void
     {
-        Room::insert([
+        $rooms = [
             [
                 'name' => 'Deluxe Ocean View',
-                'description' => 'A comfortable room with beautiful coastal views.',
+                'description' => 'Enjoy a relaxing coastal escape with beautiful ocean views and a comfortable modern interior.',
+                'room_type' => 'Deluxe Room',
+                'facilities' => [
+                    'Ocean View',
+                    'Air Conditioning',
+                    'Free Wi-Fi',
+                    'Private Bathroom',
+                    'King Size Bed',
+                    'Balcony',
+                ],
                 'price_per_night' => 12000,
                 'capacity' => 2,
                 'image' => 'rooms/ocean-view.jpg',
                 'status' => 'available',
-                'created_at' => now(),
-                'updated_at' => now(),
             ],
             [
                 'name' => 'Luxury Family Suite',
-                'description' => 'A spacious suite designed for family comfort.',
+                'description' => 'A spacious family suite offering extra comfort, modern facilities and a relaxing atmosphere.',
+                'room_type' => 'Family Suite',
+                'facilities' => [
+                    'Air Conditioning',
+                    'Free Wi-Fi',
+                    'Private Bathroom',
+                    'Two Bedrooms',
+                    'Television',
+                    'Mini Refrigerator',
+                ],
                 'price_per_night' => 18000,
                 'capacity' => 4,
                 'image' => 'rooms/family-suite.jpg',
                 'status' => 'available',
-                'created_at' => now(),
-                'updated_at' => now(),
             ],
             [
                 'name' => 'Premium Garden Villa',
-                'description' => 'A peaceful room surrounded by greenery.',
+                'description' => 'Relax in a peaceful private villa surrounded by beautiful tropical garden scenery.',
+                'room_type' => 'Private Villa',
+                'facilities' => [
+                    'Garden View',
+                    'Air Conditioning',
+                    'Free Wi-Fi',
+                    'Private Bathroom',
+                    'Private Terrace',
+                    'Outdoor Seating',
+                ],
                 'price_per_night' => 15000,
                 'capacity' => 3,
                 'image' => 'rooms/garden-villa.jpg',
                 'status' => 'available',
-                'created_at' => now(),
-                'updated_at' => now(),
             ],
-        ]);
+        ];
+
+        foreach ($rooms as $room) {
+            Room::updateOrCreate(
+                ['name' => $room['name']],
+                $room
+            );
+        }
     }
 }

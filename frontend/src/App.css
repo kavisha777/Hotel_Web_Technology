@@ -169,3 +169,89 @@ footer p {
         padding-right: 16px;
     }
 }
+
+
+
+
+
+/* Global improvements */
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #ffffff;
+    color: #252525;
+}
+
+img {
+    max-width: 100%;
+}
+
+.card {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+}
+
+.btn {
+    transition: all 0.2s ease;
+}
+
+.table-responsive {
+    border-radius: 8px;
+}
+
+section {
+    scroll-margin-top: 80px;
+}
+
+/* Tablet screens */
+@media (max-width: 991px) {
+    .display-3 {
+        font-size: 2.7rem;
+    }
+
+    .container {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+}
+
+/* Mobile screens */
+@media (max-width: 576px) {
+    .display-3 {
+        font-size: 2rem;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    .btn-lg {
+        font-size: 0.95rem;
+        padding: 10px 16px;
+    }
+
+    .card-body {
+        padding: 18px;
+    }
+
+    table {
+        font-size: 0.85rem;
+    }
+
+    .container {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+}

@@ -10,11 +10,22 @@ class Room extends Model
     protected $fillable = [
         'name',
         'description',
+        'room_type',
+        'facilities',
         'price_per_night',
         'capacity',
         'image',
         'status',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'price_per_night' => 'decimal:2',
+            'capacity' => 'integer',
+            'facilities' => 'array',
+        ];
+    }
 
     public function bookings(): HasMany
     {

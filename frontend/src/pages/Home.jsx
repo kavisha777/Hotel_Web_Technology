@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 
-function Home({ user, onLogin, onRegister, onLogout }) {
+function Home() {
     const [rooms, setRooms] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -12,7 +12,7 @@ function Home({ user, onLogin, onRegister, onLogout }) {
         const fetchRooms = async () => {
             try {
                 const response = await api.get('/rooms');
-                setRooms(response.data.data);
+                setRooms(response.data);
             } catch (err) {
                 setError('Unable to load rooms. Please try again later.');
             } finally {
@@ -23,214 +23,269 @@ function Home({ user, onLogin, onRegister, onLogout }) {
         fetchRooms();
     }, []);
 
+    const facilities = [
+        {
+            icon: '🌊',
+            title: 'Ocean Views',
+            description: 'Enjoy beautiful coastal scenery and relaxing sea views.',
+        },
+        {
+            icon: '📶',
+            title: 'Free Wi-Fi',
+            description: 'Stay connected throughout your holiday.',
+        },
+        {
+            icon: '❄️',
+            title: 'Air Conditioning',
+            description: 'Relax in comfortable, air-conditioned accommodation.',
+        },
+        {
+            icon: '🏖️',
+            title: 'Beach Access',
+            description: 'Enjoy a peaceful coastal holiday close to the beach.',
+        },
+        {
+            icon: '🍽️',
+            title: 'Dining Facilities',
+            description: 'Enjoy convenient dining during your stay.',
+        },
+        {
+            icon: '🌴',
+            title: 'Tropical Gardens',
+            description: 'Unwind in beautiful tropical surroundings.',
+        },
+    ];
+
     return (
         <>
-            <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
-                <div className="container">
-                    <Link className="navbar-brand fw-bold" to="/">
-                        Coastal Haven
-                    </Link>
-
-                    <button
-                        className="navbar-toggler"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#mainNavbar"
-                    >
-                        <span className="navbar-toggler-icon"></span>
-                    </button>
-
-                    <div className="collapse navbar-collapse" id="mainNavbar">
-                        <div className="navbar-nav ms-auto align-items-lg-center">
-                            <Link className="nav-link" to="/">Home</Link>
-                            <Link className="nav-link" to="/booking">Book a Room</Link>
-
-                            {user && (
-                                <Link className="nav-link" to="/my-bookings">
-                                    My Bookings
-                                </Link>
-                            )}
-
-                            {user?.role === 'admin' && (
-                                <Link className="nav-link" to="/admin">
-                                    Admin Dashboard
-                                </Link>
-                            )}
-
-                            {user ? (
-                                <>
-                                    <span className="text-white mx-3">
-                                        Welcome, {user.name}
-                                    </span>
-                                    <button
-                                        className="btn btn-outline-light btn-sm"
-                                        onClick={onLogout}
-                                    >
-                                        Logout
-                                    </button>
-                                </>
-                            ) : (
-                                <>
-                                    <button
-                                        className="btn btn-outline-light btn-sm me-2"
-                                        onClick={onLogin}
-                                    >
-                                        Login
-                                    </button>
-                                    <button
-                                        className="btn btn-primary btn-sm"
-                                        onClick={onRegister}
-                                    >
-                                        Register
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
-            <header
-                className="text-white text-center d-flex align-items-center"
+            {/* Hero Section */}
+            <section
+                className="text-white d-flex align-items-center"
                 style={{
-                    minHeight: '520px',
-                    background: 'linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)), url(https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=1600) center/cover'
+                    minHeight: '75vh',
+                    backgroundImage:
+                        "linear-gradient(rgba(0,0,0,0.48), rgba(0,0,0,0.48)), url('https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=2000&q=85')",
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
                 }}
             >
                 <div className="container py-5">
-                    <h1 className="display-3 fw-bold">
-                        Welcome to Coastal Haven
-                    </h1>
-                    <p className="lead mt-3">
-                        Experience comfort, relaxation and unforgettable coastal stays in Jaffna.
-                    </p>
-                    <Link to="/booking" className="btn btn-primary btn-lg mt-3">
-                        Explore Rooms
-                    </Link>
-                </div>
-            </header>
+                    <div className="col-lg-8">
+                        <p className="text-uppercase fw-semibold">
+                            Welcome to Coastal Haven
+                        </p>
 
-            <section className="container py-5" id="rooms">
-                <div className="text-center mb-5">
-                    <h2 className="fw-bold">Explore Our Rooms</h2>
-                    <p className="text-muted">
-                        Discover comfortable accommodation for your perfect coastal getaway.
-                    </p>
-                </div>
+                        <h1 className="display-3 fw-bold">
+                            Your Perfect Coastal Escape
+                        </h1>
 
-                {loading && (
-                    <div className="text-center py-5">
-                        <div className="spinner-border text-dark"></div>
-                        <p className="mt-3">Loading rooms...</p>
+                        <p className="lead my-4">
+                            Discover peaceful accommodation, beautiful coastal
+                            surroundings and memorable holiday experiences.
+                        </p>
+
+                        <Link
+                            to="/booking"
+                            className="btn btn-primary btn-lg me-2"
+                        >
+                            Book Your Stay
+                        </Link>
+
+                        <a
+                            href="#rooms"
+                            className="btn btn-outline-light btn-lg"
+                        >
+                            Explore Rooms
+                        </a>
                     </div>
-                )}
+                </div>
+            </section>
 
-                {error && (
-                    <div className="alert alert-danger">{error}</div>
-                )}
+            {/* Introduction */}
+            <section className="py-5">
+                <div className="container">
+                    <div className="row align-items-center g-4">
+                        <div className="col-lg-6">
+                            <img
+                                src="https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1000&q=85"
+                                alt="Beautiful coastal resort"
+                                className="img-fluid rounded shadow"
+                            />
+                        </div>
 
-                {!loading && !error && rooms.length === 0 && (
-                    <p className="text-center text-muted">
-                        No rooms are currently available.
-                    </p>
-                )}
+                        <div className="col-lg-6">
+                            <p className="text-primary fw-semibold">
+                                ABOUT COASTAL HAVEN
+                            </p>
 
-                <div className="row g-4">
-                    {rooms.map((room) => (
-                        <div className="col-md-4" key={room.id}>
-                            <div className="card h-100 shadow-sm">
-                                {room.image ? (
-                                    <img
-                                        src={`http://127.0.0.1:8000/storage/${room.image}`}
-                                        alt={room.name}
-                                        className="card-img-top"
-                                        style={{
-                                            height: '230px',
-                                            objectFit: 'cover'
-                                        }}
-                                    />
-                                ) : (
-                                    <div
-                                        className="bg-light d-flex justify-content-center align-items-center"
-                                        style={{ height: '230px' }}
-                                    >
-                                        No image available
+                            <h2 className="fw-bold">
+                                Experience Comfort by the Coast
+                            </h2>
+
+                            <p className="text-muted">
+                                Coastal Haven is a welcoming holiday
+                                accommodation concept designed for guests
+                                seeking relaxation, comfort and a memorable
+                                coastal experience.
+                            </p>
+
+                            <p className="text-muted">
+                                Choose from our carefully presented room
+                                options, check availability and submit your
+                                reservation online.
+                            </p>
+
+                            <Link to="/booking" className="btn btn-primary">
+                                Find Your Room
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Facilities */}
+            <section className="py-5 bg-light">
+                <div className="container">
+                    <div className="text-center mb-5">
+                        <p className="text-primary fw-semibold">
+                            OUR FACILITIES
+                        </p>
+                        <h2 className="fw-bold">Everything for Your Comfort</h2>
+                    </div>
+
+                    <div className="row g-4">
+                        {facilities.map((facility) => (
+                            <div className="col-md-6 col-lg-4" key={facility.title}>
+                                <div className="card border-0 shadow-sm h-100 p-4">
+                                    <div className="fs-1 mb-3">
+                                        {facility.icon}
                                     </div>
-                                )}
-
-                                <div className="card-body d-flex flex-column">
-                                    <h5 className="fw-bold">{room.name}</h5>
-                                    <p className="text-muted">
-                                        {room.description}
-                                    </p>
-
-                                    <p>
-                                        <i className="bi bi-people me-2"></i>
-                                        Capacity: {room.capacity} guests
-                                    </p>
 
                                     <h5 className="fw-bold">
-                                        LKR {Number(room.price_per_night).toLocaleString()}
-                                        <small className="text-muted fs-6">
-                                            {' '}/ night
-                                        </small>
+                                        {facility.title}
                                     </h5>
 
-                                    <Link
-                                        to="/booking"
-                                        className="btn btn-dark mt-auto"
-                                    >
-                                        Book Now
-                                    </Link>
+                                    <p className="text-muted mb-0">
+                                        {facility.description}
+                                    </p>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            <section className="bg-light py-5">
-                <div className="container text-center">
-                    <h2 className="fw-bold">Why Choose Coastal Haven?</h2>
-                    <div className="row g-4 mt-3">
-                        <div className="col-md-4">
-                            <i className="bi bi-house-heart fs-1"></i>
-                            <h5 className="mt-3">Comfortable Rooms</h5>
-                            <p className="text-muted">
-                                Enjoy relaxing and welcoming accommodation.
-                            </p>
-                        </div>
-
-                        <div className="col-md-4">
-                            <i className="bi bi-calendar-check fs-1"></i>
-                            <h5 className="mt-3">Easy Booking</h5>
-                            <p className="text-muted">
-                                Search availability and reserve your stay online.
-                            </p>
-                        </div>
-
-                        <div className="col-md-4">
-                            <i className="bi bi-shield-check fs-1"></i>
-                            <h5 className="mt-3">Secure Reservations</h5>
-                            <p className="text-muted">
-                                Manage your bookings through your account.
-                            </p>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </section>
 
-            <footer className="bg-dark text-white text-center py-4">
+            {/* Rooms */}
+            <section className="py-5" id="rooms">
                 <div className="container">
-                    <h5 className="fw-bold">Coastal Haven – Jaffna</h5>
-                    <p className="mb-1">
-                        Your perfect coastal getaway.
-                    </p>
-                    <small>
-                        © {new Date().getFullYear()} Coastal Haven. All rights reserved.
-                    </small>
+                    <div className="text-center mb-5">
+                        <p className="text-primary fw-semibold">
+                            ACCOMMODATION
+                        </p>
+
+                        <h2 className="fw-bold">Explore Our Rooms</h2>
+
+                        <p className="text-muted">
+                            Find the perfect accommodation for your stay.
+                        </p>
+                    </div>
+
+                    {loading ? (
+                        <div className="text-center">
+                            <div className="spinner-border text-primary" />
+                            <p className="mt-3">Loading rooms...</p>
+                        </div>
+                    ) : error ? (
+                        <div className="alert alert-danger">{error}</div>
+                    ) : rooms.length === 0 ? (
+                        <p className="text-center text-muted">
+                            No rooms are currently available.
+                        </p>
+                    ) : (
+                        <div className="row g-4">
+                            {rooms.map((room) => (
+                                <div
+                                    className="col-md-6 col-lg-4"
+                                    key={room.id}
+                                >
+                                    <div className="card h-100 shadow-sm border-0">
+                                        {room.image && (
+                                            <img
+                                                src={`http://127.0.0.1:8000/storage/${room.image}`}
+                                                alt={room.name}
+                                                className="card-img-top"
+                                                style={{
+                                                    height: '230px',
+                                                    objectFit: 'cover',
+                                                }}
+                                            />
+                                        )}
+
+                                        <div className="card-body d-flex flex-column">
+                                            <h5 className="fw-bold">
+                                                {room.name}
+                                            </h5>
+
+                                            <p className="text-muted small">
+                                                {room.room_type}
+                                            </p>
+
+                                            <p>{room.description}</p>
+
+                                            <p className="mb-2">
+                                                <strong>Maximum Guests:</strong>{' '}
+                                                {room.capacity}
+                                            </p>
+
+                                            {Array.isArray(room.facilities) && (
+                                                <p className="small text-muted">
+                                                    {room.facilities.join(' • ')}
+                                                </p>
+                                            )}
+
+                                            <div className="mt-auto">
+                                                <h5 className="text-primary fw-bold">
+                                                    LKR{' '}
+                                                    {Number(
+                                                        room.price_per_night
+                                                    ).toLocaleString('en-GB')}
+                                                    <small className="text-muted fs-6">
+                                                        {' '}/ night
+                                                    </small>
+                                                </h5>
+
+                                                <Link
+                                                    to="/booking"
+                                                    className="btn btn-primary w-100"
+                                                >
+                                                    Book Now
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
-            </footer>
+            </section>
+
+            {/* Call to Action */}
+            <section className="py-5 text-white text-center bg-dark">
+                <div className="container">
+                    <h2 className="fw-bold">
+                        Ready for Your Next Holiday?
+                    </h2>
+
+                    <p className="lead">
+                        Find your ideal room and make your reservation today.
+                    </p>
+
+                    <Link to="/booking" className="btn btn-primary btn-lg">
+                        Book Your Stay
+                    </Link>
+                </div>
+            </section>
         </>
     );
 }

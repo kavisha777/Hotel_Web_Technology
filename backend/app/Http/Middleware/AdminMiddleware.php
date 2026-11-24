@@ -12,8 +12,7 @@ class AdminMiddleware
     {
         if (!$request->user() || $request->user()->role !== 'admin') {
             return response()->json([
-                'success' => false,
-                'message' => 'Access denied. Administrators only.',
+                'message' => 'Access denied. Administrator privileges required.',
             ], 403);
         }
 

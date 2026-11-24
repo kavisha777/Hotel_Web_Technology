@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Routes,
     Route,
@@ -14,7 +14,6 @@ import MyBookings from './pages/MyBookings';
 import AdminDashboard from './pages/AdminDashboard';
 import AuthModal from './components/AuthModal';
 import api from './services/api';
-import { useEffect, useState } from 'react';
 
 function ProtectedRoute({ user, children, adminOnly = false }) {
     if (!user) {
@@ -42,37 +41,53 @@ function AppContent() {
         }
     });
 
-const [checkingAuth, setCheckingAuth] = useState(true);
+    const [checkingAuth, setCheckingAuth] = useState(true);
 
-useEffect(() => {
-    const verifyUser = async () => {
-        const token = localStorage.getItem('auth_token');
+    // Verify authentication when the application starts
+    useEffect(() => {
+        const verifyUser = async () => {
+            const token = localStorage.getItem('auth_token');
 
-        if (!token) {
-            setUser(null);
-            setCheckingAuth(false);
-            return;
-        }
+            if (!token) {
+                setUser(null);
+                setCheckingAuth(false);
+                return;
+            }
 
-        try {
-            const response = await api.get('/me');
-            setUser(response.data.user);
-            localStorage.setItem(
-                'user',
-                JSON.stringify(response.data.user)
-            );
-        } catch (error) {
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('user');
-            setUser(null);
-        } finally {
-            setCheckingAuth(false);
-        }
+            try {
+                const response = await api.get('/me');
+
+                setUser(response.data.user);
+
+                localStorage.setItem(
+                    'user',
+                    JSON.stringify(response.data.user)
+                );
+            } catch (error) {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user');
+                setUser(null);
+            } finally {
+                setCheckingAuth(false);
+            }
+        };
+
+        verifyUser();
+    }, []);
+
+    // Handle successful login or registration
+    const handleAuthSuccess = (authenticatedUser) => {
+        setUser(authenticatedUser);
+
+        localStorage.setItem(
+            'user',
+            JSON.stringify(authenticatedUser)
+        );
+
+        setAuthType(null);
     };
 
-    verifyUser();
-}, []);
-
+    // Handle logout
     const handleLogout = async () => {
         try {
             await api.post('/logout');
@@ -82,19 +97,34 @@ useEffect(() => {
 
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user');
+
         setUser(null);
     };
+
+    // Show loading screen while checking authentication
+    if (checkingAuth) {
+        return (
+            <div className="d-flex justify-content-center align-items-center min-vh-100">
+                <div className="text-center">
+                    <div className="spinner-border text-dark" />
+                    <p className="mt-3">Loading Coastal Haven...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>
             {location.pathname !== '/' && (
                 <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
                     <div className="container">
+
                         <Link className="navbar-brand fw-bold" to="/">
                             COASTAL HAVEN
                         </Link>
 
                         <div className="d-flex flex-wrap align-items-center gap-3">
+
                             <Link className="text-white text-decoration-none" to="/">
                                 Home
                             </Link>
@@ -126,6 +156,7 @@ useEffect(() => {
                                     <span className="text-white">
                                         {user.name}
                                     </span>
+
                                     <button
                                         className="btn btn-outline-light btn-sm"
                                         onClick={handleLogout}
@@ -136,13 +167,12 @@ useEffect(() => {
                             ) : (
                                 <button
                                     className="btn btn-outline-light btn-sm"
-                                    onClick={() => {
-                                        window.location.href = '/';
-                                    }}
+                                    onClick={() => setAuthType('login')}
                                 >
-                                    Login on Home
+                                    Login
                                 </button>
                             )}
+
                         </div>
                     </div>
                 </nav>
@@ -162,15 +192,15 @@ useEffect(() => {
                 />
 
                 <Route
-    path="/booking"
-    element={
-        <Booking
-            user={user}
-            onLogin={() => setAuthType('login')}
-            onRegister={() => setAuthType('register')}
-        />
-    }
-/>
+                    path="/booking"
+                    element={
+                        <Booking
+                            user={user}
+                            onLogin={() => setAuthType('login')}
+                            onRegister={() => setAuthType('register')}
+                        />
+                    }
+                />
 
                 <Route
                     path="/my-bookings"
@@ -184,7 +214,10 @@ useEffect(() => {
                 <Route
                     path="/admin"
                     element={
-                        <ProtectedRoute user={user} adminOnly>
+                        <ProtectedRoute
+                            user={user}
+                            adminOnly
+                        >
                             <AdminDashboard />
                         </ProtectedRoute>
                     }
@@ -200,26 +233,12 @@ useEffect(() => {
                 <AuthModal
                     type={authType}
                     onClose={() => setAuthType(null)}
-                    onSuccess={setUser}
-                    onSwitch={() =>
-                        setAuthType(
-                            authType === 'login' ? 'register' : 'login'
-                        )
-                    }
+                    onSuccess={handleAuthSuccess}
+                    onSwitch={(newType) => setAuthType(newType)}
                 />
             )}
         </>
     );
-    if (checkingAuth) {
-    return (
-        <div className="d-flex justify-content-center align-items-center min-vh-100">
-            <div className="text-center">
-                <div className="spinner-border text-dark" />
-                <p className="mt-3">Loading Coastal Haven...</p>
-            </div>
-        </div>
-    );
-}
 }
 
 function App() {

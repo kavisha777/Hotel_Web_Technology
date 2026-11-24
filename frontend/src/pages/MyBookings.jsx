@@ -11,12 +11,15 @@ function MyBookings() {
 
     const fetchBookings = async () => {
         try {
-            setLoading(true);
-            const response = await api.get('/my-bookings');
-            setBookings(response.data.data);
             setError('');
+
+            const response = await api.get('/my-bookings');
+            setBookings(response.data);
         } catch (err) {
-            setError(err.response?.data?.message || 'Unable to load bookings.');
+            setError(
+                err.response?.data?.message ||
+                'Unable to retrieve your bookings.'
+            );
         } finally {
             setLoading(false);
         }
@@ -26,7 +29,7 @@ function MyBookings() {
         fetchBookings();
     }, []);
 
-    const cancelBooking = async (id) => {
+    const handleCancel = async (bookingId) => {
         const confirmed = window.confirm(
             'Are you sure you want to cancel this booking?'
         );
@@ -34,72 +37,99 @@ function MyBookings() {
         if (!confirmed) return;
 
         try {
-            await api.patch(`/bookings/${id}/cancel`);
-            setMessage('Booking cancelled successfully.');
-            fetchBookings();
+            setError('');
+            setMessage('');
+
+            const response = await api.patch(
+                `/bookings/${bookingId}/cancel`
+            );
+
+            setMessage(
+                response.data.message ||
+                'Your booking has been cancelled successfully.'
+            );
+
+            await fetchBookings();
         } catch (err) {
             setError(
-                err.response?.data?.message || 'Unable to cancel this booking.'
+                err.response?.data?.message ||
+                'Unable to cancel this booking.'
             );
         }
     };
 
-    const statusClass = (status) => {
+    const getStatusClass = (status) => {
         switch (status) {
-            case 'confirmed': return 'success';
-            case 'cancelled': return 'danger';
-            default: return 'warning';
+            case 'confirmed':
+                return 'bg-success';
+
+            case 'cancelled':
+                return 'bg-danger';
+
+            default:
+                return 'bg-warning text-dark';
         }
     };
 
+    if (loading) {
+        return (
+            <div className="container py-5 text-center">
+                <div className="spinner-border text-primary" />
+                <p className="mt-3">Loading your bookings...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="container py-5">
-            <div className="d-flex justify-content-between align-items-center mb-4">
+            <div className="d-flex flex-wrap justify-content-between align-items-center mb-4">
                 <div>
-                    <h2 className="fw-bold">My Bookings</h2>
+                    <h1 className="fw-bold">My Bookings</h1>
                     <p className="text-muted">
-                        View and manage your room reservations.
+                        View and manage your villa reservations.
                     </p>
                 </div>
-                <Link to="/booking" className="btn btn-dark">
-                    Book a Room
+
+                <Link to="/booking" className="btn btn-primary">
+                    Make a New Booking
                 </Link>
             </div>
 
-            {message && (
-                <div className="alert alert-success">{message}</div>
-            )}
-
             {error && (
-                <div className="alert alert-danger">{error}</div>
+                <div className="alert alert-danger">
+                    {error}
+                </div>
             )}
 
-            {loading ? (
-                <div className="text-center py-5">
-                    <div className="spinner-border text-dark"></div>
-                    <p className="mt-3">Loading bookings...</p>
+            {message && (
+                <div className="alert alert-success">
+                    {message}
                 </div>
-            ) : bookings.length === 0 ? (
-                <div className="card text-center p-5 shadow-sm">
-                    <i className="bi bi-calendar-x fs-1 text-muted"></i>
-                    <h5 className="mt-3">No bookings found</h5>
+            )}
+
+            {bookings.length === 0 ? (
+                <div className="card shadow-sm text-center p-5">
+                    <h4>No bookings yet</h4>
                     <p className="text-muted">
-                        You haven't made any reservations yet.
+                        You have not made any reservations.
                     </p>
-                    <Link to="/booking" className="btn btn-dark mx-auto">
-                        Explore Rooms
-                    </Link>
+
+                    <div>
+                        <Link to="/booking" className="btn btn-primary">
+                            Explore Available Rooms
+                        </Link>
+                    </div>
                 </div>
             ) : (
-                <div className="table-responsive shadow-sm rounded">
-                    <table className="table table-hover align-middle mb-0">
+                <div className="table-responsive">
+                    <table className="table table-bordered table-hover align-middle">
                         <thead className="table-dark">
                             <tr>
                                 <th>Room</th>
                                 <th>Check-in</th>
                                 <th>Check-out</th>
                                 <th>Guests</th>
-                                <th>Total Price</th>
+                                <th>Total (LKR)</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
@@ -108,28 +138,52 @@ function MyBookings() {
                         <tbody>
                             {bookings.map((booking) => (
                                 <tr key={booking.id}>
-                                    <td className="fw-semibold">
-                                        {booking.room?.name || 'Room unavailable'}
+                                    <td>
+                                        <strong>
+                                            {booking.room?.name || 'Room unavailable'}
+                                        </strong>
                                     </td>
-                                    <td>{booking.check_in}</td>
-                                    <td>{booking.check_out}</td>
+
+                                    <td>
+                                        {String(booking.check_in).slice(0, 10)}
+                                    </td>
+
+                                    <td>
+                                        {String(booking.check_out).slice(0, 10)}
+                                    </td>
+
                                     <td>{booking.guests}</td>
+
                                     <td>
-                                        LKR {Number(booking.total_price).toLocaleString()}
+                                        {Number(booking.total_price).toLocaleString(
+                                            'en-GB'
+                                        )}
                                     </td>
+
                                     <td>
-                                        <span className={`badge bg-${statusClass(booking.status)}`}>
-                                            {booking.status.toUpperCase()}
+                                        <span
+                                            className={`badge ${getStatusClass(
+                                                booking.status
+                                            )}`}
+                                        >
+                                            {booking.status}
                                         </span>
                                     </td>
+
                                     <td>
-                                        {['pending', 'confirmed'].includes(booking.status) && (
+                                        {booking.status === 'pending' ? (
                                             <button
-                                                className="btn btn-outline-danger btn-sm"
-                                                onClick={() => cancelBooking(booking.id)}
+                                                className="btn btn-danger btn-sm"
+                                                onClick={() =>
+                                                    handleCancel(booking.id)
+                                                }
                                             >
-                                                Cancel
+                                                Cancel Booking
                                             </button>
+                                        ) : (
+                                            <span className="text-muted">
+                                                No actions
+                                            </span>
                                         )}
                                     </td>
                                 </tr>
